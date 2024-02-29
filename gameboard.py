@@ -41,15 +41,15 @@ class GameBoard:
         ]
 
         # All combinations
-        self.combinations: list[list[int]] = [
-            y
+        self.combinations: set[tuple[int, ...]] = {
+            tuple(y)
             for x in [
                 self.row_combinations,
                 self.col_combinations,
                 self.cross_combinations,
             ]
             for y in x
-        ]
+        }
 
     def print_board(self) -> None:
         """Print the board"""

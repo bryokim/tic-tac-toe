@@ -4,7 +4,7 @@ class Player:
     """A player in the tic tac toe game."""
 
     def __init__(
-        self, symbol: str, winning_combinations: list[list[int]] = []
+        self, symbol: str, winning_combinations: set[tuple[int, ...]] = set()
     ) -> None:
         """Initialize a new player.
 
@@ -39,7 +39,7 @@ class Player:
         """
         choice -= 1
 
-        self.winning_combinations = list(
+        self.winning_combinations = set(
             filter(lambda x: choice not in x, self.winning_combinations)
         )
 

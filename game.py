@@ -1,10 +1,11 @@
-import random
+"""Game entry point."""
 
 from gameboard import GameBoard
 from player import Player
+from computer import Computer
 
 
-def game_loop(game_board: GameBoard, player_X: Player, player_O: Player):
+def game_loop(game_board: GameBoard, player_X: Player, player_O: Computer):
     """Game logic.
 
     Args:
@@ -50,7 +51,8 @@ def game_loop(game_board: GameBoard, player_X: Player, player_O: Player):
 
         # player_O's turn - Computer
         else:
-            number_picked = random.choice(game_board.choices)
+            # number_picked = random.choice(game_board.choices)
+            number_picked = player_O.next_move(player_X, game_board.choices)
             print(f"\nComputer choice: {number_picked}")
 
             if number_picked in game_board.choices:
@@ -91,7 +93,7 @@ def main():
 
     game_board = GameBoard(size, size)
     player_X = Player("X", game_board.combinations)
-    player_O = Player("O", game_board.combinations)
+    player_O = Computer("O", game_board.combinations)
 
     game_loop(game_board, player_X, player_O)
 
