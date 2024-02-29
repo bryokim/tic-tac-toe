@@ -43,7 +43,7 @@ class Player:
             filter(lambda x: choice not in x, self.winning_combinations)
         )
 
-    def check_win(self) -> bool:
+    def is_winner(self) -> bool:
         """Check if player has won.
         Checks to see if a winning combination is among the player's picked
         positions.

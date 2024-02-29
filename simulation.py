@@ -32,7 +32,7 @@ def play(
 
     other_player.filter_winning_combinations(number_picked)
 
-    if check and current_player.check_win():
+    if check and current_player.is_winner():
         game_board.print_board()
         print(f"\n{current_player.symbol} Won")
         return True
