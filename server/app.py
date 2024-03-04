@@ -86,6 +86,8 @@ class App:
         normalized_message = re.sub(r"/s", "", message)
 
         room_id = self.data[sid]
+        print(f"{room_id =}")
+        print(f"{self.user_controller.players =}")
         game = self.room_controller.get_room(room_id)
         current_player: Player = game.players[sid]
 
@@ -152,6 +154,7 @@ class App:
 
             self.room_controller.remove(room_id)
 
+            await self.sio.leave_room(sid, room_id)
             await self.handle_enter(sid, player.username, True)
 
             if game and game.replay_confirmed:
@@ -166,6 +169,7 @@ class App:
                     Messages.resign,
                     to=other_player.sid,
                 )
+                await self.sio.leave_room(other_player.sid, room_id)
                 await self.handle_enter(
                     other_player.sid, other_player.username, True
                 )
@@ -177,6 +181,7 @@ class App:
                 Messages.resign,
                 to=sid,
             )
+            await self.sio.leave_room(sid, room_id)
             player = self.user_controller.get_player(sid)
             await self.handle_enter(sid, player.username, True)
         elif game.replay_confirmed == 0:
@@ -193,5 +198,30 @@ class App:
             await self.sio.emit("progress", game.progress(), room=room_id)
             await self.sio.emit("make move", to=game.player_X.sid)
 
-    def handle_disconnect(self, sid):
-        pass
+    async def handle_disconnect(self, sid: str):
+        """Handles the disconnect event
+
+        Args:
+            sid (str): socketio session id of the current player.
+        """
+        try:
+            room_id = self.data.pop(sid)
+        except KeyError:
+            pass
+        else:
+            self.user_controller.remove(sid)
+
+            await self.sio.emit("info", Messages.resign, room=room_id)
+
+            game = self.room_controller.get_room(room_id)
+            self.room_controller.remove(room_id)
+
+            if game:
+                other_player = (
+                    game.player_X
+                    if game.player_X.sid != sid
+                    else game.player_O
+                )
+                await self.handle_enter(
+                    other_player.sid, other_player.username, True
+                )

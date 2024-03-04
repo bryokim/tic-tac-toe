@@ -18,8 +18,9 @@ async def connect(sid, environ, auth):
 
 
 @sio.event
-def disconnect(sid):
+async def disconnect(sid):
     print(sid, "has disconnected")
+    await event_handler.handle_disconnect(sid)
 
 
 @sio.event
