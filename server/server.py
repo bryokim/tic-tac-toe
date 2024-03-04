@@ -29,3 +29,7 @@ async def enter(sid: str, username: str):
         username (str): Player's username
     """
     await event_handler.handle_enter(sid, username)
+    
+@sio.event
+async def move(sid: str, move: str):
+    await event_handler.handle_play(sid, move)

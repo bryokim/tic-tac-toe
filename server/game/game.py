@@ -18,9 +18,13 @@ class Game:
         self.scoreboard = {"total": 0, "X": 0, "O": 0, "tie": 0}
 
         self._status: int = 0
-        self._turn: str = "x"
+        self._turn: str = "X"
 
         self.player_X, self.player_O = players
+        self.players = {
+            self.player_X.sid: self.player_X,
+            self.player_O.sid: self.player_O,
+        }
 
         self.replay_confirmed = 0
 
@@ -49,20 +53,23 @@ class Game:
     def make_move(
         self,
         current_player: Player,
-        other_player: Player,
         number_picked: int,
     ) -> bool:
         """Play with the number picked.
 
         Args:
             current_player (Player): Current player making play
-            other_player (Player): Player being played against
             number_picked (int): Number of the box the current_player has picked.
                 Indexed from 1.
 
         Returns:
             bool: `True` if the current_player has won, else `False`.
         """
+
+        other_player = (
+            self.player_O if current_player.symbol == "X" else self.player_X
+        )
+
         if self.board and number_picked in self.board.choices:
             self.board.modify_board(number_picked, current_player.symbol)
             current_player.update_positions(number_picked)
@@ -72,9 +79,25 @@ class Game:
             other_player.filter_winning_combinations(number_picked)
 
             if current_player.is_winner():
-                return True
+                self._status = 3
 
-            return False
+            if self.is_draw():
+                self._status = 2
+
+            return True
+
+        return False
+
+    def is_draw(self) -> bool:
+        """Check whether the game is  draw.
+
+        Returns:
+            bool: `True` if the game is draw, else `False`.
+        """
+        return (len(self.board.choices) == 0 and self._status == 1) or (
+            len(self.player_X.winning_combinations) == 0
+            and len(self.player_O.winning_combinations) == 0
+        )
 
     def update_scoreboard(self, winner: str):
         """Updates scoreboard after game ends.
@@ -87,11 +110,7 @@ class Game:
 
     def progress(self):
         """Returns the board"""
-        return (
-            self.board.board
-            if isinstance(self.board, GameBoard)
-            else []
-        )
+        return self.board.board if isinstance(self.board, GameBoard) else []
 
     def reset(self):
         """Resets a game"""

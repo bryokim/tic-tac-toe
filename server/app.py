@@ -1,5 +1,5 @@
 import socketio
-
+import re
 from typing import Any
 
 from controllers.user import UserController
@@ -68,9 +68,69 @@ class App:
 
         await self.sio.emit("progress", new_game.progress(), room=room_id)
         await self.sio.emit("scoreboard", new_game.scoreboard, room=room_id)
+        await self.sio.emit("make move", to=player_X.sid)
 
-    def handle_play(self, message):
-        pass
+        new_game.init()
+
+    async def handle_play(self, sid: str, message: str):
+        """Handles the move event
+
+        Args:
+            sid (str): socketio session id of the current player.
+            message (str): position to play to.
+        """
+        normalized_message = re.sub(r'/s', '', message)
+
+        room_id = self.data[sid]
+        game = self.room_controller.get_room(room_id)
+        current_player: Player = game.players[sid]
+
+        player_turn = game._turn == current_player.symbol
+
+        if player_turn and game._status == 1:
+            try:
+                move = int(normalized_message)
+            except ValueError:
+                move = 0
+
+            accepted = game.make_move(current_player, move)
+
+            if accepted:
+                progress = game.progress()
+
+                await self.sio.emit("progress", progress, room=room_id)
+                if game._status == 3:
+                    await self.sio.emit("over", Messages.win, to=sid)
+                    await self.sio.emit(
+                        "over", Messages.lose, room=room_id, skip_sid=sid
+                    )
+                    await self.sio.emit(
+                        "replay", Messages.replay, room=room_id
+                    )
+                    game.update_scoreboard(current_player.symbol)
+                    game.reset()
+                elif game._status == 2:
+                    await self.sio.emit("over", Messages.tie, room=room_id)
+                    await self.sio.emit(
+                        "replay", Messages.replay, room=room_id
+                    )
+                    game.update_scoreboard("tie")
+                    game.reset()
+                else:
+                    other_player_sid: str = list(
+                        filter(lambda x: x != sid, game.players.keys())
+                    )[0]
+                    await self.sio.emit("make move", to=other_player_sid)
+
+                    game.toggle_turn()
+            else:
+                await self.sio.emit(
+                    "make move", "Wrong move", to=current_player.sid
+                )
+        elif not player_turn:
+            await self.sio.emit("info", Messages.not_yet, to=sid)
+        else:
+            await self.sio.emit("info", Messages.game_0, to=sid)
 
     def handle_replay(self, confirmed):
         pass

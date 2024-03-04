@@ -48,6 +48,21 @@ def username_exists(message: str):
     print(message)
 
 
+def print_board(board: list[list[int]], size: int) -> None:
+    """Prints the board"""
+
+    try:
+        for row in range(size):
+            print("\n", "+---" * size, "+\n|", end="", sep="")
+
+            for col in range(size):
+                print(f" {board[row][col]} |", end="")
+
+        print("\n", "+---" * size, "+", sep="")
+    except IndexError:
+        pass
+
+
 @sio.on("progress")
 def progress(data: list):
     """State of the board
@@ -55,7 +70,26 @@ def progress(data: list):
     Args:
         data (list): List of the current board.
     """
-    print(data)
+    if len(data) > 0:
+        print_board(data, 3)
+
+
+@sio.on("make move")
+def make_move(message: str = ""):
+    """Make single move.
+
+    Args:
+        message (str, optional): Message to give the player. Defaults to "".
+    """
+    if message:
+        print(message)
+
+    move = input("Enter move: ")
+
+    while move == "" or not move.isdecimal():
+        move = input("Wrong input. Please enter a number from 1-9: ")
+
+    sio.emit("move", f"{move}")
 
 
 @sio.on("scoreboard")
@@ -66,6 +100,21 @@ def scoreboard(data: dict[str, int]):
         data (dict[str, int]): Dictionary containing current scoreboard
     """
     print(data)
+
+
+@sio.on("over")
+def over(data: dict[str, int]):
+    """Show scoreboard.
+
+    Args:
+        data (dict[str, int]): Dictionary containing current scoreboard
+    """
+    print(data)
+
+
+@sio.event
+def replay(message: str):
+    print(message)
 
 
 sio.connect(SERVER_URL)
