@@ -17,6 +17,7 @@ class Messages:
     invalid = "Invalid move"
     not_yet = "It's not your move yet."
     waiting = "Waiting for another player"
+    waiting_confirm = "Waiting for other player to confirm"
     player_x = "You are 'Player X.'"
     player_o = "You are 'Player O.'"
     uname_exists = "Username already exists!"

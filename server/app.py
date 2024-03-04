@@ -22,14 +22,18 @@ class App:
         self.user_controller = UserController()
         self.room_controller = RoomController()
 
-    async def handle_enter(self, sid: str, username: str):
+    async def handle_enter(
+        self, sid: str, username: str, replay: bool = False
+    ):
         """Handles the enter event.
 
         Args:
             sid (str): socketio session id.
             username (str): The player's username.
+            replay (bool): Whether it is a replay of an existing game.
+                Usernames are not checked.
         """
-        if self.user_controller.check_exists(username):
+        if self.user_controller.check_exists(username) and not replay:
             await self.sio.emit("uname-exists", Messages.uname_exists, to=sid)
         else:
             self.user_controller.add_to_queue(sid, username)
@@ -79,7 +83,7 @@ class App:
             sid (str): socketio session id of the current player.
             message (str): position to play to.
         """
-        normalized_message = re.sub(r'/s', '', message)
+        normalized_message = re.sub(r"/s", "", message)
 
         room_id = self.data[sid]
         game = self.room_controller.get_room(room_id)
@@ -125,15 +129,69 @@ class App:
                     game.toggle_turn()
             else:
                 await self.sio.emit(
-                    "make move", "Wrong move", to=current_player.sid
+                    "make move", Messages.invalid, to=current_player.sid
                 )
         elif not player_turn:
             await self.sio.emit("info", Messages.not_yet, to=sid)
         else:
             await self.sio.emit("info", Messages.game_0, to=sid)
 
-    def handle_replay(self, confirmed):
-        pass
+    async def handle_replay(self, sid: str, confirmed: bool):
+        """Handles the replay event
+
+        Args:
+            sid (str): socketio session id of the current player.
+            confirmed (bool): Whether the player has confirmed replay.
+        """
+        room_id = self.data[sid]
+        game = self.room_controller.get_room(room_id)
+
+        if not confirmed:
+            # Player did not confirm replay
+            player = self.user_controller.get_player(sid)
+
+            self.room_controller.remove(room_id)
+
+            await self.handle_enter(sid, player.username, True)
+
+            if game and game.replay_confirmed:
+                # First player had confirmed replay
+                other_player = (
+                    game.player_X
+                    if game.player_X.sid != sid
+                    else game.player_O
+                )
+                await self.sio.emit(
+                    "info",
+                    Messages.resign,
+                    to=other_player.sid,
+                )
+                await self.handle_enter(
+                    other_player.sid, other_player.username, True
+                )
+
+        elif not game:
+            # First player did not confirm replay
+            await self.sio.emit(
+                "info",
+                Messages.resign,
+                to=sid,
+            )
+            player = self.user_controller.get_player(sid)
+            await self.handle_enter(sid, player.username, True)
+        elif game.replay_confirmed == 0:
+            # First player to confirm replay
+            game.confirm_replay()
+            await self.sio.emit("info", Messages.waiting_confirm, to=sid)
+        else:
+            # Both players have confirmed replay
+            game.reset()
+            game.init()
+
+            await self.sio.emit("scoreboard", game.scoreboard, room=room_id)
+            await self.sio.emit("info", Messages.game_1, room=room_id)
+            await self.sio.emit("progress", game.progress(), room=room_id)
+            await self.sio.emit("make move", to=game.player_X.sid)
 
     def handle_disconnect(self, sid):
         pass

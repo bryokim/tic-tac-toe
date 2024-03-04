@@ -47,6 +47,6 @@ class RoomController:
             game_id (str): id of the game to remove
         """
         try:
-            self.ongoing.pop[game_id]
+            self.ongoing.pop(game_id)
         except KeyError:
             pass

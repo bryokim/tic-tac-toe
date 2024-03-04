@@ -11,6 +11,7 @@ app = socketio.ASGIApp(sio, app)
 
 event_handler = App(sio)
 
+
 @sio.event
 async def connect(sid, environ, auth):
     print("connected", sid)
@@ -19,6 +20,7 @@ async def connect(sid, environ, auth):
 @sio.event
 def disconnect(sid):
     print(sid, "has disconnected")
+
 
 @sio.event
 async def enter(sid: str, username: str):
@@ -29,7 +31,15 @@ async def enter(sid: str, username: str):
         username (str): Player's username
     """
     await event_handler.handle_enter(sid, username)
-    
+
+
 @sio.event
 async def move(sid: str, move: str):
     await event_handler.handle_play(sid, move)
+
+
+@sio.event
+async def replay(sid: str, confirm: str):
+    confirmed = True if confirm.lower() == "y" else False
+
+    await event_handler.handle_replay(sid, confirmed)

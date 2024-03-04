@@ -114,7 +114,9 @@ def over(data: dict[str, int]):
 
 @sio.event
 def replay(message: str):
-    print(message)
+    # print(message)
+    confirm = input(f'{message} [y/n]: ')
+    sio.emit('replay', confirm)
 
 
 sio.connect(SERVER_URL)
